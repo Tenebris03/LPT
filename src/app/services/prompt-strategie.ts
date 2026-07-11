@@ -2,11 +2,11 @@ import { Schutzkatalog } from '../models/kategorie.model';
 import type { ChatCompletionMessageParam } from '@mlc-ai/web-llm';
 
 export interface OberAntwort {
-  oberkategorie: string | number | null;
+  oberkategorie: string | null;
 }
 
 export interface UnterAntwort {
-  unterkategorie: string | number | null;
+  unterkategorie: string | null;
 }
 
 /**
@@ -15,6 +15,11 @@ export interface UnterAntwort {
  *  2. Unterkategorie waehlen (nur die Unterkategorien der gewaehlten
  *     Oberkategorie im Kontext) -> Ober- und Unterkategorie passen garantiert
  *     zusammen und liefern zwei getrennte Konfidenzwerte.
+ *
+ * Das Modell antwortet mit der EXAKTEN Kategoriebezeichnung als Text (nicht
+ * mehr mit einer Zahl), damit die Logprob-basierte Konfidenzberechnung in
+ * llm.service.ts die Token der tatsaechlich generierten Kategoriebezeichnung
+ * auswertet (vgl. 5.3, Konfidenzberechnung) statt der Token einer Indexzahl.
  */
 export interface PromptStrategie {
   readonly name: string;
@@ -31,12 +36,12 @@ export interface PromptStrategie {
   parseUnter(rohtext: string, attribut?: string): UnterAntwort;
 }
 
-function nummeriert(items: string[]): string {
-  return items.map((z, i) => `${i + 1}. ${z}`).join('\n');
+function aufzaehlung(items: string[]): string {
+  return items.map((z) => `- ${z}`).join('\n');
 }
 
 function oberkategorienListe(katalog: Schutzkatalog): string {
-  return nummeriert(katalog.kategorien.map((k) => k.oberkategorie));
+  return aufzaehlung(katalog.kategorien.map((k) => k.oberkategorie));
 }
 
 function unterkategorienListe(
@@ -44,28 +49,22 @@ function unterkategorienListe(
   oberkategorie: string,
 ): string {
   const k = katalog.kategorien.find((x) => x.oberkategorie === oberkategorie);
-  return nummeriert(k?.attribute ?? []);
+  return aufzaehlung(k?.attribute ?? []);
 }
 
-function oberIndex(katalog: Schutzkatalog, name: string): number {
-  return katalog.kategorien.findIndex((k) => k.oberkategorie === name) + 1;
-}
-
-function unterIndex(
-  katalog: Schutzkatalog,
-  oberkategorie: string,
-  name: string,
-): number {
-  const k = katalog.kategorien.find((x) => x.oberkategorie === oberkategorie);
-  return k ? k.attribute.indexOf(name) + 1 : 0;
-}
-
+/**
+ * Extrahiert ein Textfeld aus der ersten JSON-Struktur im Rohtext.
+ * `ausSegment` erlaubt, nur einen Teilbereich des Rohtexts zu durchsuchen
+ * (z. B. den Bereich nach einem <antwort>-Marker bei CoT), damit eine im
+ * Fliesstext der Begruendung erwaehnte Kategorie nicht faelschlich als
+ * JSON-Treffer geparst wird.
+ */
 function jsonFeldAusText(
   rohtext: string,
   feld: 'oberkategorie' | 'unterkategorie',
   attribut?: string,
   stufe?: string,
-): string | number | null {
+): string | null {
   const praefix = `[${attribut ?? '?'}]${stufe ? '[' + stufe + ']' : ''}`;
   const treffer = rohtext.match(/\{[\s\S]*\}/);
   if (!treffer) {
@@ -77,7 +76,8 @@ function jsonFeldAusText(
   }
   try {
     const obj = JSON.parse(treffer[0]);
-    return obj[feld] ?? null;
+    const wert = obj[feld];
+    return typeof wert === 'string' && wert.trim() ? wert.trim() : null;
   } catch (e) {
     console.error(
       `${praefix} Fehler beim JSON-Parsen:`,
@@ -91,17 +91,34 @@ function jsonFeldAusText(
   }
 }
 
+/**
+ * Bei CoT steht vor der eigentlichen Antwort eine Begruendung. Damit die
+ * JSON-Extraktion nicht versehentlich Text aus der Begruendung erfasst,
+ * wird ausschliesslich der Bereich nach dem <antwort>-Marker durchsucht.
+ * Falls der Marker fehlt (Modell haelt sich nicht an das Format), faellt
+ * die Funktion auf den gesamten Rohtext zurueck.
+ */
+function segmentNachAntwortMarker(rohtext: string): string {
+  const idx = rohtext.indexOf('<antwort>');
+  if (idx === -1) {
+    return rohtext;
+  }
+  return rohtext.slice(idx);
+}
+
 const OBER_REGELN =
   'WICHTIG:\n' +
   '- Feldname UND Beispielwert sind ausschliesslich die EINGABE. Sie sind NIEMALS selbst eine gueltige Antwort.\n' +
   '- Gib NIEMALS den Feldnamen oder den Beispielwert als "oberkategorie" zurueck.\n' +
-  '- "oberkategorie" MUSS eine der NUMMERN (1, 2, 3, ...) aus der unten aufgelisteten Oberkategorien sein.';
+  '- "oberkategorie" MUSS EXAKT einer der unten aufgelisteten Bezeichnungen entsprechen ' +
+  '(Wort fuer Wort identisch kopiert, keine Abkuerzung, keine Umformulierung).';
 
 const UNTER_REGELN =
   'WICHTIG:\n' +
   '- Feldname UND Beispielwert sind ausschliesslich die EINGABE. Sie sind NIEMALS selbst eine gueltige Antwort.\n' +
   '- Gib NIEMALS den Feldnamen oder den Beispielwert als "unterkategorie" zurueck.\n' +
-  '- "unterkategorie" MUSS eine der NUMMERN (1, 2, 3, ...) aus der unten aufgelisteten Unterkategorien sein.';
+  '- "unterkategorie" MUSS EXAKT einer der unten aufgelisteten Bezeichnungen entsprechen ' +
+  '(Wort fuer Wort identisch kopiert, keine Abkuerzung, keine Umformulierung).';
 
 function oberSystem(katalog: Schutzkatalog): string {
   return (
@@ -112,7 +129,7 @@ function oberSystem(katalog: Schutzkatalog): string {
     '\n\nVerfuegbare Oberkategorien:\n' +
     oberkategorienListe(katalog) +
     '\n\nAntworte AUSSCHLIESSLICH mit JSON: ' +
-    '{"oberkategorie": "<Nummer aus der Liste>"}. Kein weiterer Text.'
+    '{"oberkategorie": "<exakte Bezeichnung aus der Liste>"}. Kein weiterer Text.'
   );
 }
 
@@ -125,7 +142,7 @@ function unterSystem(katalog: Schutzkatalog, oberkategorie: string): string {
     `\n\nUnterkategorien von "${oberkategorie}":\n` +
     unterkategorienListe(katalog, oberkategorie) +
     '\n\nAntworte AUSSCHLIESSLICH mit JSON: ' +
-    '{"unterkategorie": "<Nummer aus der Liste>"}. Kein weiterer Text.'
+    '{"unterkategorie": "<exakte Bezeichnung aus der Liste>"}. Kein weiterer Text.'
   );
 }
 
@@ -195,13 +212,13 @@ export class FewShotStrategie implements PromptStrategie {
       { role: 'user', content: 'Datenfeld: Kundenname: Max Mustermann' },
       {
         role: 'assistant',
-        content: `{"oberkategorie": "${oberIndex(katalog, 'Kundenstammdaten')}"}`,
+        content: '{"oberkategorie": "Kundenstammdaten"}',
       },
       // Zweites Beispiel: klarer Katalogtreffer.
       { role: 'user', content: 'Datenfeld: Rechnungsbetrag: 149,90 EUR' },
       {
         role: 'assistant',
-        content: `{"oberkategorie": "${oberIndex(katalog, 'Rechnungsdaten')}"}`,
+        content: '{"oberkategorie": "Rechnungsdaten"}',
       },
       { role: 'user', content: `Datenfeld: ${attribut}` },
     ];
@@ -221,7 +238,7 @@ export class FewShotStrategie implements PromptStrategie {
       },
       {
         role: 'assistant',
-        content: `{"unterkategorie": "${unterIndex(katalog, 'Kundenstammdaten', 'Klartext')}"}`,
+        content: '{"unterkategorie": "Klartext"}',
       },
       {
         role: 'user',
@@ -248,4 +265,112 @@ export class FewShotStrategie implements PromptStrategie {
   }
 }
 
+/**
+ * Chain-of-Thought-Strategie: Das Modell muss vor der Endantwort eine kurze
+ * Begruendung in <begruendung> liefern, bevor es die JSON-Antwort in
+ * <antwort> liefert. Die zweigeteilte Ausgabe ist zwingend, damit
+ * llm.service.ts die Logprob-Konfidenz gezielt nur aus dem <antwort>-Block
+ * lesen kann und Begruendungstoken die Konfidenz nicht verfaelschen.
+ */
+export class ChainOfThoughtStrategie implements PromptStrategie {
+  readonly name = 'Chain-of-Thought';
+
+  buildOberMessages(
+    attribut: string,
+    katalog: Schutzkatalog,
+  ): ChatCompletionMessageParam[] {
+    return [
+      {
+        role: 'system',
+        content:
+          oberSystem(katalog) +
+          '\n\nDenke vor der Endantwort kurz nach: Was sagt der Feldname aus? ' +
+          'Was sagt der Beispielwert aus? Welche Oberkategorien kommen infrage, ' +
+          'welche passt am besten?\n\n' +
+          'Gliedere die Antwort IMMER in genau zwei Bloecke mit diesen Markern:\n' +
+          '<begruendung>Deine Analyse in 1-3 Saetzen.</begruendung>\n' +
+          '<antwort>{"oberkategorie": "<exakte Bezeichnung aus der Liste>"}</antwort>\n' +
+          'Nach </antwort> darf kein weiterer Text folgen.',
+      },
+      {
+        role: 'user',
+        content: 'Datenfeld: Kundenname: Max Mustermann',
+      },
+      {
+        role: 'assistant',
+        content:
+          '<begruendung>Der Feldname "Kundenname" verweist auf Stammdaten eines ' +
+          'Kunden, der Beispielwert ist ein Personenname ohne weitere ' +
+          'Vertrags- oder Zahlungsangaben.</begruendung>\n' +
+          '<antwort>{"oberkategorie": "Kundenstammdaten"}</antwort>',
+      },
+      { role: 'user', content: `Datenfeld: ${attribut}` },
+    ];
+  }
+
+  buildUnterMessages(
+    attribut: string,
+    oberkategorie: string,
+    katalog: Schutzkatalog,
+  ): ChatCompletionMessageParam[] {
+    return [
+      {
+        role: 'system',
+        content:
+          unterSystem(katalog, oberkategorie) +
+          '\n\nDenke vor der Endantwort kurz nach, welche Unterkategorie am ' +
+          'genauesten passt.\n\n' +
+          'Gliedere die Antwort IMMER in genau zwei Bloecke mit diesen Markern:\n' +
+          '<begruendung>Deine Analyse in 1-3 Saetzen.</begruendung>\n' +
+          '<antwort>{"unterkategorie": "<exakte Bezeichnung aus der Liste>"}</antwort>\n' +
+          'Nach </antwort> darf kein weiterer Text folgen.',
+      },
+      {
+        role: 'user',
+        content:
+          'Datenfeld: Kundenname: Max Mustermann\nGewaehlte Oberkategorie: Kundenstammdaten',
+      },
+      {
+        role: 'assistant',
+        content:
+          '<begruendung>Der Wert "Max Mustermann" liegt als vollstaendiger, ' +
+          'unveraenderter Name vor, ohne Pseudonymisierung oder Anonymisierung.' +
+          '</begruendung>\n' +
+          '<antwort>{"unterkategorie": "Klartext"}</antwort>',
+      },
+      {
+        role: 'user',
+        content: `Datenfeld: ${attribut}\nGewaehlte Oberkategorie: ${oberkategorie}`,
+      },
+    ];
+  }
+
+  parseOber(rohtext: string, attribut?: string): OberAntwort {
+    return {
+      oberkategorie: jsonFeldAusText(
+        segmentNachAntwortMarker(rohtext),
+        'oberkategorie',
+        attribut,
+        'Ober',
+      ),
+    };
+  }
+
+  parseUnter(rohtext: string, attribut?: string): UnterAntwort {
+    return {
+      unterkategorie: jsonFeldAusText(
+        segmentNachAntwortMarker(rohtext),
+        'unterkategorie',
+        attribut,
+        'Unter',
+      ),
+    };
+  }
+}
+
 export const STANDARD_STRATEGIE = new FewShotStrategie();
+export const VERFUEGBARE_STRATEGIEN: PromptStrategie[] = [
+  new DirektStrategie(),
+  new FewShotStrategie(),
+  new ChainOfThoughtStrategie(),
+];

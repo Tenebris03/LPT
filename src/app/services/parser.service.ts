@@ -65,7 +65,7 @@ export class ParserService {
             for (const feld of felder) {
               const wert = (zeile[feld] ?? '').toString().trim();
               if (wert) {
-                teile.push(felder.length > 1 ? `${feld}: ${wert}` : wert);
+                teile.push(wert);
               }
             }
             const text = teile.join(' | ').trim();

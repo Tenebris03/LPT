@@ -12,30 +12,17 @@ export interface ModellOption {
   label: string;
 }
 
+// Nur Phi-4-mini-instruct, gemaess der Architekturentscheidung in 5.4.2.
+// Die zuvor testweise hinterlegten Modelle (Llama 3.2, Qwen2.5) wurden
+// entfernt, da sie nicht Gegenstand der Bewertung in Kapitel 6 sind.
 export const MODELL_OPTIONEN: ModellOption[] = [
   {
-    id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-    label: 'Llama 3.2 1B · q4f16 (schnell, benötigt shader-f16)',
+    id: 'Phi-4-mini-instruct-q4f16_1-MLC',
+    label: 'Phi-4-mini-instruct · q4f16 (~3.4 GB VRAM)',
   },
   {
-    id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
-    label: 'Qwen2.5 0.5B · q4f16 (am schnellsten)',
-  },
-  {
-    id: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-    label: 'Llama 3.2 1B · q4f32 (kompatibel)',
-  },
-  {
-    id: 'Qwen2.5-0.5B-Instruct-q4f32_1-MLC',
-    label: 'Qwen2.5 0.5B · q4f32 (kompatibel)',
-  },
-  {
-    id: 'Qwen2.5-7B-Instruct-q4f16_1-MLC',
-    label: 'Qwen2.5 7B · q4f16 (hohe Genauigkeit, ~5.1 GB)',
-  },
-  {
-    id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
-    label: 'Llama 3.2 3B · q4f16 (ausgewogen, ~2.3 GB)',
+    id: 'Phi-4-mini-instruct-q4f32_1-MLC',
+    label: 'Phi-4-mini-instruct · q4f32 (~4.2 GB VRAM)',
   },
 ];
 
@@ -47,7 +34,10 @@ const TOP_LOGPROBS = 5;
 // die Ausgabe trotzdem reproduzierbar.
 const TEMPERATURE = 0.1;
 const SEED = 42;
-const MAX_TOKENS = 48;
+// CoT benoetigt mehr Tokens als Direkt/Few-Shot, da vor der JSON-Antwort eine
+// Begruendung generiert wird. Bei Direkt/Few-Shot bleiben die zusaetzlichen
+// Tokens ungenutzt und erhoehen nur das Antwortlimit, nicht die Laufzeit.
+const MAX_TOKENS = 160;
 
 export interface Kategorisierung {
   oberkategorie: string | null;
@@ -274,29 +264,59 @@ export class LlmService {
     return werte.length ? Math.min(...werte) : null;
   }
 
-  private mappeOberkategorie(
-    wert: string | number | null,
-    katalog: Schutzkatalog,
-  ): string | null {
-    if (wert === null || wert === '') return null;
-    const idx = typeof wert === 'number' ? wert : parseInt(String(wert), 10);
-    if (!Number.isInteger(idx) || idx < 1) return null;
-    return katalog.kategorien[idx - 1]?.oberkategorie ?? null;
+  /**
+   * Normalisiert eine Kategoriebezeichnung fuer den robusten Vergleich
+   * (Gross-/Kleinschreibung, mehrfache Leerzeichen, Randwhitespace). Dient
+   * nur dem Abgleich gegen den Katalog, nicht der Anzeige.
+   */
+  private normalisiere(text: string): string {
+    return text.trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
+  /**
+   * Bildet die vom Modell zurueckgegebene Kategoriebezeichnung exakt auf
+   * eine Oberkategorie des Katalogs ab. Exakter Vergleich zuerst, danach
+   * normalisierter Vergleich (Gross-/Kleinschreibung, Whitespace) als
+   * Toleranz gegen kleinere Abweichungen. Keine Fuzzy-Teiluebereinstimmung,
+   * damit keine falsche Kategorie geraten wird.
+   */
+  private mappeOberkategorie(
+    wert: string | null,
+    katalog: Schutzkatalog,
+  ): string | null {
+    if (!wert) return null;
+    const exakt = katalog.kategorien.find((k) => k.oberkategorie === wert);
+    if (exakt) return exakt.oberkategorie;
+
+    const normZiel = this.normalisiere(wert);
+    const genaehert = katalog.kategorien.find(
+      (k) => this.normalisiere(k.oberkategorie) === normZiel,
+    );
+    return genaehert?.oberkategorie ?? null;
+  }
+
+  /**
+   * Analoges Mapping fuer Unterkategorien, eingeschraenkt auf die zur
+   * bereits gewaehlten Oberkategorie gehoerenden Eintraege.
+   */
   private mappeUnterkategorie(
-    wert: string | number | null,
+    wert: string | null,
     oberkategorie: string | null,
     katalog: Schutzkatalog,
   ): string | null {
-    if (!oberkategorie || wert === null || wert === '') return null;
+    if (!oberkategorie || !wert) return null;
     const kat = katalog.kategorien.find(
       (k) => k.oberkategorie === oberkategorie,
     );
     if (!kat) return null;
-    const idx = typeof wert === 'number' ? wert : parseInt(String(wert), 10);
-    if (!Number.isInteger(idx) || idx < 1) return null;
-    return kat.attribute[idx - 1] ?? null;
+
+    if (kat.attribute.includes(wert)) return wert;
+
+    const normZiel = this.normalisiere(wert);
+    const genaehert = kat.attribute.find(
+      (a) => this.normalisiere(a) === normZiel,
+    );
+    return genaehert ?? null;
   }
 
   /**
@@ -324,11 +344,17 @@ export class LlmService {
    * Wahrscheinlichkeit unter den Tokens, die die generierte Kategoriebezeichnung
    * bilden. Struktur-/Fence-Token werden explizit ausgeschlossen, damit z. B.
    * ``` nicht als niedrigster Wert die Konfidenz verfaelscht.
+   *
+   * Sucht bewusst das LETZTE Vorkommen der Zielbezeichnung im Rohtext (nicht
+   * das erste): Bei CoT kann dieselbe Kategoriebezeichnung bereits in der
+   * Begruendung erwaehnt werden, bevor sie im finalen <antwort>-JSON-Block
+   * erneut auftaucht. Nur das letzte Vorkommen entspricht der tatsaechlichen
+   * Endantwort und darf fuer die Konfidenz herangezogen werden.
    */
   private berechneKonfidenz(
     rohtext: string,
     tokens: TokenLogprob[],
-    ziel: string | number | null,
+    ziel: string | null,
   ): number | null {
     if (!tokens.length) {
       return null;
@@ -344,9 +370,8 @@ export class LlmService {
     let min = Infinity;
 
     // 1. Bevorzugt: nur die Tokens, die die generierte Kategoriebezeichnung bilden.
-    if (ziel !== null && ziel !== undefined && ziel !== '') {
-      const zielStr = String(ziel);
-      const idx = rohtext.indexOf(zielStr);
+    if (ziel) {
+      const idx = rohtext.lastIndexOf(ziel);
       if (idx >= 0) {
         const zs = idx;
         const ze = idx + ziel.length;
