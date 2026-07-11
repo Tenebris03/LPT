@@ -1,0 +1,116 @@
+<div class="overlay" (click)="schliessen()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <header class="dialog-kopf">
+      <div>
+        <h2>Erkannte Attribute</h2>
+        <p class="klein">
+          {{ ergebnisse().length }} Attribute · {{ anzahlUebernommen() }} zur Übernahme markiert
+        </p>
+      </div>
+      <button type="button" class="schliessen" (click)="schliessen()">✕</button>
+    </header>
+
+    <div class="dialog-body">
+      <aside class="liste">
+        @for (e of ergebnisse(); track e.id) {
+          <div
+            class="listen-item"
+            [class.aktiv]="e.id === auswahlId()"
+            [class.aus]="!e.uebernehmen"
+            (click)="waehlen(e.id)"
+          >
+            <label class="check" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                [checked]="e.uebernehmen"
+                (change)="toggle(e, $event)"
+              />
+            </label>
+            <div class="item-text">
+              <span class="attr">{{ e.attribut }}</span>
+              <span class="kat">{{ e.aktuelleOberkategorie ?? 'keine Kategorie' }}</span>
+            </div>
+            <span class="konf-mini" [class]="konfidenzKlasse(e.konfidenz)">
+              {{ konfidenzText(e.konfidenz) }}
+            </span>
+          </div>
+        }
+      </aside>
+
+      <section class="detail">
+        @if (ausgewaehlt(); as e) {
+          <div class="detail-inhalt">
+            <span class="feld-label">Attribut</span>
+            <p class="detail-attr">{{ e.attribut }}</p>
+            <span class="quelle">Quelle: {{ e.quelle }}</span>
+
+            @if (e.fehler) {
+              <p class="detail-fehler">{{ e.fehler }}</p>
+            }
+
+            <div class="feld-kopf">
+              <span class="feld-label">Vorgeschlagene Oberkategorie</span>
+              <span class="konf-inline" [class]="konfidenzKlasse(e.konfidenzOber)">
+                Konfidenz: {{ konfidenzText(e.konfidenzOber) }}
+              </span>
+            </div>
+            <select class="kat-select" (change)="onOber(e, $event)">
+              <option value="" [selected]="!e.aktuelleOberkategorie" disabled>
+                Oberkategorie ...
+              </option>
+              @for (o of oberkategorien(); track o) {
+                <option [value]="o" [selected]="o === e.aktuelleOberkategorie">{{ o }}</option>
+              }
+            </select>
+
+            <div class="feld-kopf">
+              <span class="feld-label">Unterkategorie</span>
+              <span class="konf-inline" [class]="konfidenzKlasse(e.konfidenzUnter)">
+                Konfidenz: {{ konfidenzText(e.konfidenzUnter) }}
+              </span>
+            </div>
+            <select
+              class="kat-select"
+              (change)="onUnter(e, $event)"
+              [disabled]="!e.aktuelleOberkategorie"
+            >
+              <option value="" [selected]="!e.aktuelleUnterkategorie" disabled>
+                Unterkategorie ...
+              </option>
+              @for (u of unterFuer(e.aktuelleOberkategorie); track u) {
+                <option [value]="u" [selected]="u === e.aktuelleUnterkategorie">{{ u }}</option>
+              }
+            </select>
+
+            <span class="status-zeile">
+              Status:
+              <span class="status-badge" [class]="'s-' + e.status">{{ e.status }}</span>
+            </span>
+          </div>
+        } @else {
+          <p class="leer">Kein Attribut ausgewählt.</p>
+        }
+      </section>
+    </div>
+
+    <footer class="dialog-fuss">
+      <button type="button" class="best-btn" (click)="bestaetigen()">
+        Bestätigen
+      </button>
+      <div class="konf-anzeige">
+        <span class="konf-label">Ober</span>
+        <span class="konf-wert" [class]="konfidenzKlasse(ausgewaehlt()?.konfidenzOber ?? null)">
+          {{ konfidenzText(ausgewaehlt()?.konfidenzOber ?? null) }}
+        </span>
+        <span class="konf-label">Unter</span>
+        <span class="konf-wert" [class]="konfidenzKlasse(ausgewaehlt()?.konfidenzUnter ?? null)">
+          {{ konfidenzText(ausgewaehlt()?.konfidenzUnter ?? null) }}
+        </span>
+        <span class="konf-label">Gesamt</span>
+        <span class="konf-wert" [class]="konfidenzKlasse(ausgewaehlt()?.konfidenz ?? null)">
+          {{ konfidenzText(ausgewaehlt()?.konfidenz ?? null) }}
+        </span>
+      </div>
+    </footer>
+  </div>
+</div>

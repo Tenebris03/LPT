@@ -1,0 +1,53 @@
+:root {
+  --magenta: #e20074;
+  --magenta-hover: #ff1a90;
+  --magenta-soft: rgba(226, 0, 116, 0.15);
+
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #1c2230;
+  --surface-3: #21262d;
+  --border: #30363d;
+  --border-soft: #262c36;
+
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --text-dim: #6e7681;
+
+  --ok-bg: rgba(35, 197, 98, 0.15);
+  --ok-fg: #3fb950;
+  --warn-bg: rgba(210, 153, 34, 0.15);
+  --warn-fg: #d29922;
+  --danger-bg: rgba(248, 81, 73, 0.15);
+  --danger-fg: #f85149;
+  --info-bg: rgba(56, 139, 253, 0.15);
+  --info-fg: #58a6ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

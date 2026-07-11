@@ -1,0 +1,18 @@
+<div class="layout">
+  <header class="topbar">
+    <a class="brand" routerLink="/">
+      <span class="logo">LP</span>
+      <h1>{{ title() }}</h1>
+    </a>
+    <nav class="nav">
+      <a routerLink="/" routerLinkActive="aktiv" [routerLinkActiveOptions]="{ exact: true }">
+        Prüfung
+      </a>
+      <a routerLink="/einstellungen" routerLinkActive="aktiv">Einstellungen</a>
+    </nav>
+  </header>
+
+  <main class="inhalt">
+    <router-outlet />
+  </main>
+</div>

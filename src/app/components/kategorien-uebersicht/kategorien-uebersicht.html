@@ -1,0 +1,42 @@
+<div class="uebersicht">
+  <h2>Schutzkategorien</h2>
+  <p class="hinweis">Feste Referenzliste, gegen die jedes Attribut kategorisiert wird.</p>
+
+  <input
+    class="suche"
+    type="search"
+    placeholder="Kategorien durchsuchen..."
+    [value]="filter()"
+    (input)="onFilter($event)"
+  />
+
+  @if (!katalog()) {
+    <p class="leer">Katalog wird geladen ...</p>
+  }
+
+  <ul class="baum">
+    @for (kat of gefiltert(); track kat.oberkategorie) {
+      <li class="ober">
+        <button type="button" class="ober-kopf" (click)="umschalten(kat.oberkategorie)">
+          <span class="pfeil">{{ istOffen(kat.oberkategorie) ? '▾' : '▸' }}</span>
+          <span class="ober-name">{{ kat.oberkategorie }}</span>
+          <span class="anzahl">{{ kat.attribute.length }}</span>
+        </button>
+        @if (istOffen(kat.oberkategorie)) {
+          <div class="unter">
+            @for (a of kat.attribute; track a) {
+              <button
+                type="button"
+                class="attr-btn"
+                [class.markiert]="istMarkiert(kat.oberkategorie + '::' + a)"
+                (click)="attributUmschalten(kat.oberkategorie + '::' + a)"
+              >
+                {{ a }}
+              </button>
+            }
+          </div>
+        }
+      </li>
+    }
+  </ul>
+</div>

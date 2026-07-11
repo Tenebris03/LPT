@@ -1,0 +1,261 @@
+{
+  "kategorien": [
+    {
+      "oberkategorie": "Kundenstammdaten",
+      "attribute": [
+        "Hochgradig pseudonymisiert, d.h. ohne Name, Adresse, Telefonummer, E-Mail-Adresse, BKTO, Kundennummer oder andere für Außenstehende bekannte Daten",
+        "Anonymisiert. Ein Bezug zum Kunden ist für niemanden mehr herstellbar",
+        "IBAN anonymisiert (z.B. verkürzt um die letzten 5 Stellen)",
+        "Sonstige",
+        "Klartext",
+        "IBAN unverkürzt"
+      ]
+    },
+    {
+      "oberkategorie": "Auftrags- / Vertragsdaten",
+      "attribute": [
+        "Klartext",
+        "Hochgradig pseudonymisiert, d.h. ohne Name, Adresse, Telefonummer, E-Mail-Adresse u.a. auch für Außenstehende bekannte Daten",
+        "Anonymisiert - ein Bezug zum Aktionär ist für niemanden mehr herstellbar",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Rechnungsdaten",
+      "attribute": [
+        "Klartext",
+        "Hochgradig pseudonymisiert, d.h. ohne Name, Adresse, Telefonummer, E-Mail-Adresse o.a. auch für Außenstehende ggf. bekannte Daten",
+        "Ein Bezug zum einzelnen Kunden ist für niemanden mehr herstellbar (z.B. Aggregation über Kundengruppen)",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Ausweisdaten",
+      "attribute": [
+        "Ausweiskopien",
+        "Seriennummern von Ausweisen / Ausweis-ID",
+        "Nationalität",
+        "Ausstellende Behörde",
+        "Gültigkeitdatum",
+        "Haarfarbe",
+        "Körpergröße",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Kreditkartendaten",
+      "attribute": [
+        "Kreditkartennummer (unverkürzt)",
+        "Kreditkartennummer anonymisiert (z.B. nur die letzten 4 Stellen sichtbar)",
+        "Ablaufdatum von Kreditkarten",
+        "Prüfnummern von Kreditkarten (CSC, KPN, CVC, CID, CVV)",
+        "Passwörter zu Bezahlverfahren (z.B. PayPal)",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Zugangsdaten von Kunden",
+      "attribute": [
+        "Passwort zum Telekom-Login",
+        "Sonstige Passwörter für Webportale",
+        "Telefon-Passwort",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Nachrichteninhalte, die dem Fernmeldegeheimnis unterliegen = bei der Erbringung des eigentlichen TK-Dienstes anfallen",
+      "attribute": [
+        "Sonstige",
+        "Inhalte von Telefongesprächen",
+        "Sprachboxinhalte (Anrufbeantworterfunktion)",
+        "Mailinhalte",
+        "SMS-Inhalte",
+        "Chatinhalte",
+        "Videotelefoninhalte",
+        "Webkonferenzinhalte"
+      ]
+    },
+    {
+      "oberkategorie": "Verkehrsdaten / Einzelverbindungsdaten die in der Rolle TK-Anbieter, d.h. bei der TK-Diensteerbringung anfallen",
+      "attribute": [
+        "Mit unverkürzten Zielrufnummern",
+        "Mit verkürzten Zielrufnummern (mind. die letzten 3 Stellen sind nicht gespeichert)",
+        "Beginn und Ende der Verbindung der TK-Verbindung (auch Datenverbindung oder SMS)",
+        "Daten zu Anrufversuchen",
+        "Daten zu Anrufen, die keine direkten Kosten auslösen (z.B. Flatrate)",
+        "Verbindungen zu bes. Einrichtungen (z.B. Telefonseelsorge) sind nicht ausgefiltert",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Positionsdaten des Nutzers",
+      "attribute": [
+        "Funkzelle (Cell-ID)",
+        "HotSpot-ID",
+        "Location Area Code (LAC)",
+        "Base Station Controller (BSC)",
+        "GPS z.B. aus Mobile App",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Nutzungsdaten von Telemedien (öffentlichen Internetdiensten)",
+      "attribute": [
+        "IP-Adresse des Webseitenbesuchers (unverkürzt)",
+        "IP-Adresse des Webseitenbesuchers (anonymisiert)",
+        "App-ID",
+        "Cookies",
+        "Browserfingerprint",
+        "Sonstige Daten, die zur Wiedererkennung eines Nutzers dienen können (unique user)",
+        "Zeitpunkt und Dauer der Nutzung",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Zugangsdaten von Mitarbeitern oder Maschinen zu Daten",
+      "attribute": [
+        "Zugangsdaten von Mitarbeitern oder Maschinen zu Daten der DSK 3",
+        "Zugangsdaten von Mitarbeitern oder Maschinen zu Daten der DSK 2",
+        "Zugangsdaten von Mitarbeitern oder Maschinen zu Daten der DSK 1"
+      ]
+    },
+    {
+      "oberkategorie": "Personalakten / sensible Beschäftigtendaten",
+      "attribute": [
+        "Personalakte von Beamten",
+        "Personalakte von Angestellten",
+        "Gehaltsdaten",
+        "Daten zur leistungsorientierten Bezahlung/Provisionsabrechnung",
+        "Personalentwicklungsmanagement / Beschäftigtenbeurteilungen",
+        "Potentialanalysen",
+        "Recruitingdaten",
+        "Identitäts- / Accountmanagement (Pseudonymauflösung?)",
+        "Krankmeldungen / Krankheitstage",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Daten, die der Personalverwaltung dienen/Stammdaten von Beschäftigten",
+      "attribute": [
+        "Zeiterfassung / Abwesenheiten / Urlaubsverwaltung",
+        "Zielemanagement",
+        "Reisekostenabrechnung",
+        "Steuerung von Personalressourcen (z.B. Skills)",
+        "Auftrags-/Ticketsteuerung",
+        "Projektmanagement",
+        "Personalnummer",
+        "Steuernummer / Steuerklasse",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Rassische und ethnische Herkunft",
+      "attribute": [
+        "Nationalität",
+        "Hautfarbe",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Politische Meinung",
+      "attribute": [
+        "Mitgliedschaft in politischen Organisationen",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Religiöse oder philosophische Überzeugungen",
+      "attribute": [
+        "Religionszugehörigkeit",
+        "Parteimitgliedschaft",
+        "Mitgliedschaft in Vereinen",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Gewerkschaftszugehörigkeit",
+      "attribute": [
+        "Mitgliedschaft in Gewerkschaft (z.B. Gehaltsauswirkung)",
+        "Zugehörigkeit zu Rahmenvertrag für Gewerkschaftsmitglieder",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Gesundheit",
+      "attribute": [
+        "Gesundheitliche Beschwerden",
+        "Diagnosen",
+        "Behandlungspläne",
+        "Medikamentierung (z.B. Rezepte)",
+        "Laborergebnisse (z.B. Blut-, Gewebeproben etc.)",
+        "Behinderung",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Sexualleben",
+      "attribute": [
+        "Sexuelle Orientierung",
+        "Sexuelle Vorlieben",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Biometrische Daten",
+      "attribute": [
+        "Fingerabdrücke",
+        "Stimmabdrücke",
+        "Biometrisch vermessene Gesichtsfotos",
+        "Augenvermessung (z.B. Irisscan)",
+        "Gangbilder (nur wenn biometrisch vermessen)",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Genetische Daten",
+      "attribute": [
+        "Genmerkmale aus biologischen Proben (Blut, Speichel)",
+        "DNA-Probe",
+        "RNS-Analysen",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Daten zu strafrechtlichen Verurteilungen",
+      "attribute": [
+        "Information ob jemand vorbestraft ist",
+        "Information über Art von Verurteilungen",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Daten die Berufsgeheimnis unterliegen",
+      "attribute": [
+        "Aus der Tätigkeit als Geistlicher",
+        "Aus der Tätigkeit als Journalist",
+        "Aus der Tätigkeit als Anwalt",
+        "Aus der Tätigkeit als Abgeordneter",
+        "Aus der Tätigkeit als Arzt",
+        "Aus der Tätigkeit als Wirtschaftsprüfer",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Aktionärsdaten",
+      "attribute": [
+        "Klartext",
+        "Hochgradig pseudonymisiert, d.h. ohne Name, Adresse, Telefonummer, E-Mail-Adresse u.a. auch für Außenstehende bekannte Daten",
+        "Anonymisiert - ein Bezug zum Aktionär ist für niemanden mehr herstellbar",
+        "Sonstige"
+      ]
+    },
+    {
+      "oberkategorie": "Sonstige Daten",
+      "attribute": [
+        "Dienstliche Kontaktdaten von Mitarbeitern (Rufnummer, E-Mail-Adresse, Standort)",
+        "Nutzungsdaten von Mitarbeitern in Systemen (z.B. von wann bis wann war der Mitarbeiter an einem System angemeldet)",
+        "Accountdaten / Berechtigungsverwaltung von Mitarbeiter (Rollen etc. aber ohne Passwörter)"
+      ]
+    }
+  ]
+}

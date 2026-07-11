@@ -1,0 +1,63 @@
+<div class="home">
+  <section class="karte upload-karte">
+    <h2>Blaupause prüfen</h2>
+    <p class="klein">
+      PDF (Fließtext) oder CSV (tabellarisch) hochladen. Die Klassifizierung läuft
+      anschließend im Hintergrund.
+    </p>
+
+    @if (!llm.bereit()) {
+      <div class="warnung">
+        Das Modell ist noch nicht geladen.
+        <a routerLink="/einstellungen">Jetzt in den Einstellungen laden →</a>
+      </div>
+    }
+
+    <div class="aktionen">
+      <label class="datei-btn" [class.disabled]="!llm.bereit() || state.laueftInferenz()">
+        <input
+          type="file"
+          accept=".pdf,.csv"
+          hidden
+          [disabled]="!llm.bereit() || state.laueftInferenz()"
+          (change)="onDatei($event)"
+        />
+        @if (state.laueftInferenz()) {
+          Analyse läuft ...
+        } @else {
+          Datei auswählen
+        }
+      </label>
+
+      @if (state.abgeschlossen() && !state.laueftInferenz()) {
+        <button type="button" class="ghost-btn" (click)="ergebnisseOeffnen()">
+          Ergebnisse anzeigen
+        </button>
+      }
+    </div>
+
+    @if (state.laueftInferenz()) {
+      <div class="progress">
+        <div class="bar" [style.width.%]="state.fortschritt() * 100"></div>
+      </div>
+      <p class="klein status">
+        {{ state.verarbeitet() }} / {{ state.gesamt() }} Attribute klassifiziert
+      </p>
+    }
+
+    @if (state.dateiname() && !state.laueftInferenz()) {
+      <p class="klein datei">Zuletzt geladen: {{ state.dateiname() }}</p>
+    }
+    @if (state.fehler()) {
+      <p class="fehler">{{ state.fehler() }}</p>
+    }
+  </section>
+
+  <section class="karte">
+    <app-kategorien-uebersicht />
+  </section>
+</div>
+
+@if (state.dialogOffen()) {
+  <app-ergebnis-dialog />
+}

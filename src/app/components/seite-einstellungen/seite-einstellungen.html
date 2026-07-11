@@ -1,0 +1,76 @@
+<div class="einstellungen">
+  <h2>Einstellungen</h2>
+  <p class="unter">Modell und Prompt-Strategie für die Kategorisierung konfigurieren.</p>
+
+  <div class="karte">
+    <div class="schritt">
+      <span class="nummer">1</span>
+      <div class="inhalt">
+        <h3>Modell laden</h3>
+        <p class="klein">Läuft lokal via WebGPU im Browser. Bei einem Fehler mit
+          shader-f16 eine der q4f32-Varianten wählen.</p>
+
+        <select
+          class="select"
+          [disabled]="modellLaedt()"
+          (change)="modellWaehlen($event)"
+        >
+          @for (m of modelle; track m.id) {
+            <option [value]="m.id" [selected]="m.id === ausgewaehltesModell()">
+              {{ m.label }}
+            </option>
+          }
+        </select>
+
+        <div class="modell-zeile">
+          <button
+            type="button"
+            class="btn"
+            [disabled]="modellLaedt()"
+            (click)="modellLaden()"
+          >
+            @if (modellLaedt()) {
+              Lädt ...
+            } @else if (llm.bereit() && llm.aktivesModell() === ausgewaehltesModell()) {
+              Neu laden
+            } @else {
+              Modell herunterladen & starten
+            }
+          </button>
+
+          @if (llm.bereit() && llm.aktivesModell() === ausgewaehltesModell()) {
+            <span class="badge ok">Bereit: {{ llm.aktivesModell() }}</span>
+          }
+        </div>
+
+        @if (modellLaedt() || (llm.ladefortschritt() > 0 && !llm.bereit())) {
+          <div class="progress">
+            <div class="bar" [style.width.%]="llm.ladefortschritt() * 100"></div>
+          </div>
+          <p class="klein status">{{ llm.ladephase() }}</p>
+        }
+
+        @if (modellFehler()) {
+          <p class="fehler">{{ modellFehler() }}</p>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="karte">
+    <div class="schritt">
+      <span class="nummer">2</span>
+      <div class="inhalt">
+        <h3>Prompt-Strategie</h3>
+        <p class="klein">Bestimmt, wie das Attribut an das Modell übergeben wird.</p>
+        <select class="select" (change)="strategieWaehlen($event)">
+          @for (s of strategien; track s.name) {
+            <option [value]="s.name" [selected]="s.name === state.strategie().name">
+              {{ s.name }}
+            </option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
